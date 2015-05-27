@@ -36,7 +36,7 @@ template DIRNAME*: expr =
   parentDir(instantiationInfo(0, true).filename)
 
 type
-  Cmd = distinct Process
+  Cmd* = distinct Process
 
 proc cmd*(c: string): Cmd = 
   startProcess(c, "", [], nil, {poEvalCommand}).Cmd
@@ -44,13 +44,13 @@ proc cmd*(c: string): Cmd =
 proc stdout*(c: Cmd): Stream =
   Process(c).outputStream
 
-proc `$`(c: Cmd): string =
+proc `$`*(c: Cmd): string =
   let s = c.stdout
   result = ""
   while not s.atEnd:
     result.add(s.readLine.string & "\n")
 
-proc `$$`(c: Cmd): string =
+proc `$$`*(c: Cmd): string =
   let s = c.stdout
   var res: seq[string] = @[]
   while not s.atEnd:
