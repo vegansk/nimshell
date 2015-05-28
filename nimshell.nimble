@@ -6,4 +6,4 @@ description   = "Library for shell scripting in nim"
 license       = "GPLv3"
 
 [Deps]
-Requires: "nim >= 0.10.2"
+Requires: "nim >= 0.10.2, monad"

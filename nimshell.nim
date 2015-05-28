@@ -1,62 +1,79 @@
-import os, osproc, macros, parseutils, sequtils, streams, strutils
+import os, osproc, macros, parseutils, sequtils, streams, strutils, monad/maybe, private/utils
 
-macro i*(text: string{lit}): expr =
+type
+  Command* = ref object
+    value: string
+    process: Maybe[Process]
+    stdout: Maybe[Stream]
+
+proc newCommand*(cmd: string): Command =
+  new(result)
+  result.value = cmd
+  result.process = nothing[Process]()
+  result.stdout = nothing[Stream]()
+
+# Maybe.unbox causes compile error. https://github.com/superfunc/monad/issues/1
+proc unbox[T](v: Maybe[T]): T = v.value
+
+proc close*(cmd: Command) =
+  if ?cmd.process:
+    cmd.process.unbox().close()
+
+macro cmd*(text: string{lit}): expr =
   var nodes: seq[NimNode] = @[]
-  # Parse string literal into "stuff".
   for k, v in text.strVal.interpolatedFragments:
     if k == ikStr or k == ikDollar:
       nodes.add(newLit(v))
     else:
       nodes.add(parseExpr("$(" & v & ")"))
-  # Fold individual nodes into a statement list.
-  result = newNimNode(nnkStmtList).add(
+  var str = newNimNode(nnkStmtList).add(
     foldr(nodes, a.infix("&", b)))
+  result = newCall(bindSym"newCommand", str)
 
-proc `>>?`*(s: string): int =
-  execShellCmd s
+when not defined(shellNoImplicits):
+  converter stringToCommand(s: string): Command = newCommand(s)
 
-proc `>>>?`*(s: string): int =
-  >>? (s & " >& /dev/null")
+proc `&>`(c: Command, s: Stream): Command =
+  assert true != ?c.process
+  c.stdout = just(s)
+  result = c
   
-proc `>>`*(s: string) =
-  discard >>? s
+proc execCommand*(c: Command, options: set[ProcessOption] = {}) =
+  assert true != ?c.process
+  var opt = options
+  if not ?c.stdout:
+    opt = opt + {poParentStreams}
+  c.process = just(startProcess(c.value, "", [], nil, opt + {poEvalCommand}))
+  if ?c.stdout:
+    c.process.unbox().outputStream().copyStream(c.stdout.unbox())
 
-proc `>>>`*(s: string) =
-  discard >>>? s
+proc exitCode(c: Command): int =
+  result = waitForExit(c.process.unbox())
 
-proc `>>!`*(s: string) =
-  let code = >>? s
-  if code != 0:
-    writeln(stdmsg, "Error code ", code, " executing: ", s)
+proc `>>?`*(c: Command): int =
+  execCommand(c)
+  result = c.exitCode()
 
-proc `>>>!`*(s: string) =
-  >>! (s & " >& /dev/null")
+proc `>>`*(c: Command) =
+  discard >>? c
 
-template DIRNAME*: expr =
+template SCRIPTDIR*: expr =
   parentDir(instantiationInfo(0, true).filename)
 
-type
-  Cmd* = distinct Process
+proc `$`*(c: Command): string =
+  let sout = newStringStream()
+  >> (c &> sout)
+  result = sout.data.strip
 
-proc cmd*(c: string): Cmd = 
-  startProcess(c, "", [], nil, {poEvalCommand}).Cmd
+proc `$$`*(c: Command): seq[string] = ($c).splitLines()
 
-proc stdout*(c: Cmd): Stream =
-  Process(c).outputStream
-
-proc `$`*(c: Cmd): string =
-  let s = c.stdout
-  result = ""
-  while not s.atEnd:
-    result.add(s.readLine.string & "\n")
-
-proc `$$`*(c: Cmd): string =
-  let s = c.stdout
-  var res: seq[string] = @[]
-  while not s.atEnd:
-    res.add(s.readLine.string)
-  result = res.join(" ")
-  
 when isMainModule:
-  let x = $$cmd"docker ps --no-trunc -aq"
-  echo i"docker rm $x"
+  var v = cmd"""ls ${($$"ls /").mapIt(string, "/" & it).join(" ")}"""
+  >> v
+  assert true == ?v.process
+
+  assert 0 != >>? ("execInvalidCommand" &> newDevNullStream())
+
+  assert "Hello, world!" == $cmd"echo Hello, world!"
+  for v in $$"ls -lah /":
+    echo "\"" & v & "\""
