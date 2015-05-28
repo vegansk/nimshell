@@ -60,7 +60,7 @@ proc `>>`*(c: Command) =
 proc `>>!`*(c: Command) =
   let res = >>? c
   if res != 0:
-    write(stderr, "Error code " & $res & " while executing command: " & c.value)
+    write(stderr, "Error code " & $res & " while executing command: " & c.value & "\n")
     quit(res)
 
 proc devNull(): Stream = newDevNullStream()
