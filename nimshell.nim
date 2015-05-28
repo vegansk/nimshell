@@ -33,7 +33,7 @@ macro cmd*(text: string{lit}): expr =
   result = newCall(bindSym"newCommand", str)
 
 when not defined(shellNoImplicits):
-  converter stringToCommand(s: string): Command = newCommand(s)
+  converter stringToCommand*(s: string): Command = newCommand(s)
 
 proc `&>`(c: Command, s: Stream): Command =
   assert true != ?c.process
