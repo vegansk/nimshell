@@ -57,6 +57,12 @@ proc `>>?`*(c: Command): int =
 proc `>>`*(c: Command) =
   discard >>? c
 
+proc `>>!`*(c: Command) =
+  let res = >>? c
+  if res != 0:
+    write(stderr, "Error code " & $res & " while executing command: " & c.value)
+    quit(res)
+
 template SCRIPTDIR*: expr =
   parentDir(instantiationInfo(0, true).filename)
 
