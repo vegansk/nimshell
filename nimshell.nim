@@ -63,6 +63,8 @@ proc `>>!`*(c: Command) =
     write(stderr, "Error code " & $res & " while executing command: " & c.value)
     quit(res)
 
+proc devNull(): Stream = newDevNullStream()
+
 template SCRIPTDIR*: expr =
   parentDir(instantiationInfo(0, true).filename)
 
@@ -78,7 +80,7 @@ when isMainModule:
   >> v
   assert true == ?v.process
 
-  assert 0 != >>? ("execInvalidCommand" &> newDevNullStream())
+  assert 0 != >>? ("execInvalidCommand" &> devNull())
 
   assert "Hello, world!" == $cmd"echo Hello, world!"
   for v in $$"ls -lah /":
