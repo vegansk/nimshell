@@ -26,14 +26,14 @@ var
 
 proc `>>?`*(c: Command): int
 
-proc exitCode(c: Command): int =
+proc exitCode*(c: Command): int =
   if not ?c.process:
     lastExitCode = >>? c
   else:
     lastExitCode = waitForExit(c.process.unbox())
   result = lastExitCode
 
-proc `$?`(): int = lastExitCode
+proc `$?`*(): int = lastExitCode
 
 macro cmd*(text: string{lit}): expr =
   var nodes: seq[NimNode] = @[]
@@ -50,7 +50,7 @@ when not defined(shellNoImplicits):
   converter stringToCommand*(s: string): Command = newCommand(s)
   converter commandToBool*(c: Command): bool = c.exitCode() == 0
 
-proc `&>`(c: Command, s: Stream): Command =
+proc `&>`*(c: Command, s: Stream): Command =
   assert true != ?c.process
   c.stdout = just(s)
   result = c
@@ -90,7 +90,7 @@ proc `||`*(c1: Command, c2: Command): Command =
   else:
     return c2
   
-proc devNull(): Stream = newDevNullStream()
+proc devNull*(): Stream = newDevNullStream()
 
 template SCRIPTDIR*: expr =
   parentDir(instantiationInfo(0, true).filename)
