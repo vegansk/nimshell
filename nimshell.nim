@@ -1,4 +1,6 @@
+{.push warnings:off hints:off.}
 import os, osproc, macros, parseutils, sequtils, streams, strutils, monad/maybe, private/utils
+{.pop.}
 
 type
   Command* = ref object
@@ -76,9 +78,9 @@ proc `$`*(c: Command): string =
 proc `$$`*(c: Command): seq[string] = ($c).splitLines()
 
 when isMainModule:
-  var v = cmd"""ls ${($$"ls /").mapIt(string, "/" & it).join(" ")}"""
-  >> v
-  assert true == ?v.process
+  # var v = cmd"""ls ${($$"ls /").mapIt(string, "/" & it).join(" ")}"""
+  # >> v
+  # assert true == ?v.process
 
   assert 0 != >>? ("execInvalidCommand" &> devNull())
 
