@@ -75,12 +75,15 @@ proc `$`*(c: Command): string =
   >> (c &> sout)
   result = sout.data.strip
 
-proc `$$`*(c: Command): seq[string] = ($c).splitLines()
+proc `$$`*(c: Command): seq[string] =
+  result = ($c).splitLines()
+  if result[0] == "":
+    result = @[]
 
 when isMainModule:
-  # var v = cmd"""ls ${($$"ls /").mapIt(string, "/" & it).join(" ")}"""
-  # >> v
-  # assert true == ?v.process
+  var v = cmd"""ls ${($$"ls /").mapIt(string, "/" & it).join(" ")}"""
+  >> v
+  assert true == ?v.process
 
   assert 0 != >>? ("execInvalidCommand" &> devNull())
 
