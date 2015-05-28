@@ -21,6 +21,20 @@ proc close*(cmd: Command) =
   if ?cmd.process:
     cmd.process.unbox().close()
 
+var
+  lastExitCode {.threadvar.}: int
+
+proc `>>?`*(c: Command): int
+
+proc exitCode(c: Command): int =
+  if not ?c.process:
+    lastExitCode = >>? c
+  else:
+    lastExitCode = waitForExit(c.process.unbox())
+  result = lastExitCode
+
+proc `$?`(): int = lastExitCode
+
 macro cmd*(text: string{lit}): expr =
   var nodes: seq[NimNode] = @[]
   for k, v in text.strVal.interpolatedFragments:
@@ -34,6 +48,7 @@ macro cmd*(text: string{lit}): expr =
 
 when not defined(shellNoImplicits):
   converter stringToCommand*(s: string): Command = newCommand(s)
+  converter commandToBool*(c: Command): bool = c.exitCode() == 0
 
 proc `&>`(c: Command, s: Stream): Command =
   assert true != ?c.process
@@ -49,11 +64,9 @@ proc execCommand*(c: Command, options: set[ProcessOption] = {}) =
   if ?c.stdout:
     c.process.unbox().outputStream().copyStream(c.stdout.unbox())
 
-proc exitCode(c: Command): int =
-  result = waitForExit(c.process.unbox())
-
 proc `>>?`*(c: Command): int =
-  execCommand(c)
+  if not ?c.process:
+    execCommand(c)
   result = c.exitCode()
 
 proc `>>`*(c: Command) =
@@ -65,6 +78,18 @@ proc `>>!`*(c: Command) =
     write(stderr, "Error code " & $res & " while executing command: " & c.value & "\n")
     quit(res)
 
+proc `&&`*(c1: Command, c2: Command): Command =
+  if c1:
+    return c2
+  else:
+    return c1
+
+proc `||`*(c1: Command, c2: Command): Command =
+  if c1:
+    return c1
+  else:
+    return c2
+  
 proc devNull(): Stream = newDevNullStream()
 
 template SCRIPTDIR*: expr =
@@ -90,3 +115,11 @@ when isMainModule:
   assert "Hello, world!" == $cmd"echo Hello, world!"
   for v in $$"ls -lah /":
     echo "\"" & v & "\""
+
+  assert true == cmd"exit 0" && cmd"exit 0"
+  assert false == cmd"exit 0" && cmd"exit 123"
+  assert `$?`() == 123
+
+  assert true == "exit 1" || "exit 0"
+  assert false == "exit 1" || "exit 3"
+  assert `$?`() == 3
