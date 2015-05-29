@@ -99,7 +99,9 @@ proc `$$`*(c: Command): seq[string] =
 ####################################################################################################
 # Helpers
 
-proc which*(name: string): string =
+proc `?`*(s: string): bool = not (s.strip == "")
+
+proc findInPath(name: string): string =
   if existsFile name:
     return name
   for p in getEnv("PATH").split(PathSep):
@@ -107,7 +109,13 @@ proc which*(name: string): string =
       return (p / name)
   return ""
 
-proc `?`*(s: string): bool = not (s.strip == "")
+when defined(windows):
+  proc which*(name: string): string =
+    result = findInPath name
+    if not ?result:
+      result = findInPath (name & ".exe")
+elif defined(posix):
+  proc which*(name: string): string = findInPath name
 
 ####################################################################################################
 # Some tests
