@@ -107,8 +107,7 @@ proc which*(name: string): string =
       return (p / name)
   return ""
 
-proc `?`*(s: string): bool =
-  not (s == "")
+proc `?`*(s: string): bool = not (s.strip == "")
 
 ####################################################################################################
 # Some tests
@@ -126,24 +125,24 @@ when isMainModule:
       echo "\"" & v & "\""
 
 
-#   elif defined(posix):
-#     var v = cmd"""ls ${($$"ls /").mapIt(string, "/" & it).join(" ")}"""
-#     >> v
-#     assert true == ?v.process
+  elif defined(posix):
+    var v = cmd"""ls ${($$"ls /").mapIt(string, "/" & it).join(" ")}"""
+    >> v
+    assert true == ?v.process
   
-#     assert 0 != >>? ("execInvalidCommand" &> devNull())
+    assert 0 != >>? ("execInvalidCommand" &> devNull())
   
-#     assert "Hello, world!" == $cmd"echo Hello, world!"
+    assert "Hello, world!" == $cmd"echo Hello, world!"
 
-#     for v in $$"ls -lah /":
-#       echo "\"" & v & "\""
+    for v in $$"ls -lah /":
+      echo "\"" & v & "\""
   
-# assert true == (cmd"exit 0" and cmd"exit 0")
-# assert false == (cmd"exit 0" and cmd"exit 123")
-# assert `$?`() == 123
-
-# assert true == (cmd"exit 1" or cmd"exit 0")
-# assert false == (cmd"exit 1" or cmd"exit 3")
-# assert `$?`() == 3
-      
-echo which "sh"
+  assert true == (cmd"exit 0" and cmd"exit 0")
+  assert false == (cmd"exit 0" and cmd"exit 123")
+  assert `$?`() == 123
+  
+  assert true == (cmd"exit 1" or cmd"exit 0")
+  assert false == (cmd"exit 1" or cmd"exit 3")
+  assert `$?`() == 3
+        
+  echo (which "sh")
