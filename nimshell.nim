@@ -81,7 +81,7 @@ proc `>>!`*(c: Command) =
     write(stderr, "Error code " & $res & " while executing command: " & c.value & "\n")
     quit(res)
 
-proc devNull*(): Stream = newDevNullStream()
+proc devNull*(): Stream {.inline.} = newDevNullStream()
 
 template SCRIPTDIR*: expr =
   parentDir(instantiationInfo(0, true).filename)
@@ -96,6 +96,22 @@ proc `$$`*(c: Command): seq[string] =
   if result[0] == "":
     result = @[]
 
+####################################################################################################
+# Helpers
+
+proc which*(name: string): string =
+  if existsFile name:
+    return name
+  for p in getEnv("PATH").split(PathSep):
+    if existsFile(p / name):
+      return (p / name)
+  return ""
+
+proc `?`*(s: string): bool =
+  not (s == "")
+
+####################################################################################################
+# Some tests
 when isMainModule:
   when defined(windows):
     var v = cmd"""dir ${($$"dir /b /ad c:\\").mapIt(string, "\"c:\\" & it & "\"").join(" ")}"""
@@ -110,22 +126,24 @@ when isMainModule:
       echo "\"" & v & "\""
 
 
-  elif defined(posix):
-    var v = cmd"""ls ${($$"ls /").mapIt(string, "/" & it).join(" ")}"""
-    >> v
-    assert true == ?v.process
+#   elif defined(posix):
+#     var v = cmd"""ls ${($$"ls /").mapIt(string, "/" & it).join(" ")}"""
+#     >> v
+#     assert true == ?v.process
   
-    assert 0 != >>? ("execInvalidCommand" &> devNull())
+#     assert 0 != >>? ("execInvalidCommand" &> devNull())
   
-    assert "Hello, world!" == $cmd"echo Hello, world!"
+#     assert "Hello, world!" == $cmd"echo Hello, world!"
 
-    for v in $$"ls -lah /":
-      echo "\"" & v & "\""
+#     for v in $$"ls -lah /":
+#       echo "\"" & v & "\""
   
-assert true == (cmd"exit 0" and cmd"exit 0")
-assert false == (cmd"exit 0" and cmd"exit 123")
-assert `$?`() == 123
+# assert true == (cmd"exit 0" and cmd"exit 0")
+# assert false == (cmd"exit 0" and cmd"exit 123")
+# assert `$?`() == 123
 
-assert true == (cmd"exit 1" or cmd"exit 0")
-assert false == (cmd"exit 1" or cmd"exit 3")
-assert `$?`() == 3
+# assert true == (cmd"exit 1" or cmd"exit 0")
+# assert false == (cmd"exit 1" or cmd"exit 3")
+# assert `$?`() == 3
+      
+echo which "sh"
