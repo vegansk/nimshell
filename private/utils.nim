@@ -4,8 +4,13 @@ type
   DevNullStreamObj = object of StreamObj
   DevNullStream* = ref DevNullStreamObj
 
-const
-  IO_BUFF_SIZE = 4096
+when defined(windows):
+  const
+    IO_BUFF_SIZE = 1
+else:
+  const
+    IO_BUFF_SIZE = 4096
+
 
 proc nullClose(s: Stream)  = discard
 proc nullAtEnd(s: Stream): bool  = true
