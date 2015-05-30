@@ -114,8 +114,15 @@ when defined(windows):
     result = findInPath name
     if not ?result:
       result = findInPath (name & ".exe")
+
+  proc sh*(name: string): string = name & ".bat"
+  proc exe*(name: string): string = name & ".exe"
+  
 elif defined(posix):
   proc which*(name: string): string = findInPath name
+
+  proc sh*(name: string): string = name & ".sh"
+  proc exe*(name: string): string = name
 
 ####################################################################################################
 # Some tests
