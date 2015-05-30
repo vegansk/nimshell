@@ -2,12 +2,7 @@ import nimshell, os, future, osproc, sequtils, strutils
 
 # First try compilers which are known to be fast(er than GCC)
 var COMPILER = ""
-when defined(posix):
-  let exeName = "executable"
-elif defined(windows):
-  let exeName = "executable.exe"
-else:
-  {.error "Your OS is not supported".}
+let exeName = exe"executable"
 
 if not ?(which "nim"): quit("Nim is not found on your system")
   
