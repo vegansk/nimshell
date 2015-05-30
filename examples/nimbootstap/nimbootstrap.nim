@@ -16,14 +16,3 @@ setCurrentDir "csources"
 setCurrentDir ParDir
 >>! ("bin" / exe"nim" & " c koch.nim")
 >>! ("." / exe"koch" & " boot -d:release")
-
-# when defined(windows):
-#   >>! "build.bat"
-#   setCurrentDir ".."
-#   >>! "bin/nim.exe c koch.nim"
-#   >>! "./koch.exe boot -d:release"
-# else:
-#   >>! "./build.sh"
-#   setCurrentDir ".."
-#   >>! "bin/nim c koch.nim"
-#   >>! "./koch boot -d:release"
