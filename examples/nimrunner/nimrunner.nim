@@ -1,4 +1,4 @@
-import nimshell, os, oids, future, osproc, sequtils, strutils
+import nimshell, os, future, osproc, sequtils, strutils
 
 # First try compilers which are known to be fast(er than GCC)
 var COMPILER = ""
@@ -8,10 +8,6 @@ elif defined(windows):
   let exeName = "executable.exe"
 else:
   {.error "Your OS is not supported".}
-
-proc mktemp(): string =
-  result = getTempDir() / $genOid()
-  createDir(result)
 
 if not ?(which "nim"): quit("Nim is not found on your system")
   

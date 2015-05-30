@@ -1,5 +1,5 @@
 {.push warnings:off hints:off.}
-import os, osproc, macros, parseutils, sequtils, streams, strutils, monad/maybe, private/utils
+import os, osproc, macros, parseutils, sequtils, streams, strutils, monad/maybe, private/utils, oids
 {.pop.}
 
 type
@@ -98,6 +98,10 @@ proc `$$`*(c: Command): seq[string] =
 
 ####################################################################################################
 # Helpers
+
+proc mktemp*(): string =
+  result = getTempDir() / $genOid()
+  createDir(result)
 
 proc `?`*(s: string): bool = not (s.strip == "")
 
