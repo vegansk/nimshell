@@ -1,4 +1,5 @@
 nimcache
 nimshell
+nimrunner
 *.swp
 *.exe
