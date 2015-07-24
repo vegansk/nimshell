@@ -1,4 +1,5 @@
 #!/usr/bin/env nimrunner
+##: cc=gcc
 import os
 
 echo "Hello, world!"
