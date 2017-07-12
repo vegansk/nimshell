@@ -1,25 +1,21 @@
 {.push warnings:off hints:off.}
-import os, osproc, macros, parseutils, sequtils, streams, strutils, monad/maybe, private/utils, oids
+import os, osproc, macros, parseutils, sequtils, streams, strutils, options, private/utils, oids
 {.pop.}
 
 type
   Command* = ref object
     value: string
-    process: Maybe[Process]
-    stdout: Maybe[Stream]
+    process: Option[Process]
+    stdout: Option[Stream]
 
 proc newCommand*(cmd: string): Command =
   new(result)
   result.value = cmd
-  result.process = nothing[Process]()
-  result.stdout = nothing[Stream]()
-
-# Maybe.unbox causes compile error. https://github.com/superfunc/monad/issues/1
-proc unbox[T](v: Maybe[T]): T = v.value
+  result.process = none(Process)
+  result.stdout = none(Stream)
 
 proc close*(cmd: Command) =
-  if ?cmd.process:
-    cmd.process.unbox().close()
+  map(cmd.process, close)
 
 var
   lastExitCode {.threadvar.}: int
@@ -27,15 +23,15 @@ var
 proc `>>?`*(c: Command): int
 
 proc exitCode*(c: Command): int =
-  if not ?c.process:
+  if isNone(c.process):
     lastExitCode = >>? c
   else:
-    lastExitCode = waitForExit(c.process.unbox())
+    lastExitCode = waitForExit(c.process.get())
   result = lastExitCode
 
 proc `$?`*(): int = lastExitCode
 
-macro cmd*(text: string{lit}): expr =
+macro cmd*(text: string{lit}): Command =
   var nodes: seq[NimNode] = @[]
   for k, v in text.strVal.interpolatedFragments:
     if k == ikStr or k == ikDollar:
@@ -51,24 +47,24 @@ when not defined(shellNoImplicits):
   converter commandToBool*(c: Command): bool = c.exitCode() == 0
 
 proc `&>`*(c: Command, s: Stream): Command =
-  assert true != ?c.process
-  c.stdout = just(s)
+  assert isNone(c.process)
+  c.stdout = some(s)
   result = c
 
 proc execCommand*(c: Command, options: set[ProcessOption] = {}) =
-  assert true != ?c.process
+  assert isNone(c.process)
   var opt = options
   var line = c.value
-  if not ?c.stdout:
+  if isNone(c.stdout):
     opt = opt + {poParentStreams}
   when defined(windows):
     line = "cmd /q /d /c " & line
-  c.process = just(startProcess(line, "", [], nil, opt + {poEvalCommand, poUsePath, poStdErrToStdOut}))
-  if ?c.stdout:
-    c.process.unbox().outputStream().copyStream(c.stdout.unbox())
+  c.process = some(startProcess(line, "", [], nil, opt + {poEvalCommand, poUsePath, poStdErrToStdOut}))
+  if isSome(c.stdout):
+    c.process.get().outputStream().copyStream(c.stdout.get())
 
 proc `>>?`*(c: Command): int =
-  if not ?c.process:
+  if isNone(c.process):
     execCommand(c)
   result = c.exitCode()
 
@@ -83,7 +79,7 @@ proc `>>!`*(c: Command) =
 
 proc devNull*(): Stream {.inline.} = newDevNullStream()
 
-template SCRIPTDIR*: expr =
+template SCRIPTDIR*: string =
   parentDir(instantiationInfo(0, true).filename)
 
 proc `$`*(c: Command): string =
@@ -117,7 +113,7 @@ when defined(windows):
   proc which*(name: string): string =
     result = findInPath name
     if not ?result:
-      result = findInPath (name & ".exe")
+      result = findInPath(name & ".exe")
 
   proc sh*(name: string): string = name & ".bat"
   proc exe*(name: string): string = name & ".exe"
@@ -147,7 +143,7 @@ when isMainModule:
   elif defined(posix):
     var v = cmd"""ls ${($$"ls /").mapIt(string, "/" & it).join(" ")}"""
     >> v
-    assert true == ?v.process
+    assert isSome(v.process)
   
     assert 0 != >>? ("execInvalidCommand" &> devNull())
   
@@ -163,5 +159,5 @@ when isMainModule:
   assert true == (cmd"exit 1" or cmd"exit 0")
   assert false == (cmd"exit 1" or cmd"exit 3")
   assert `$?`() == 3
-        
-  echo (which "sh")
+
+  echo(which "sh")
