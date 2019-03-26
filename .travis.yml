@@ -1,0 +1,28 @@
+language: c
+
+env:
+  # Nim versions to test against
+  - CHOOSENIM_CHOOSE_VERSION=devel
+  - CHOOSENIM_CHOOSE_VERSION=0.19.4
+  - CHOOSENIM_CHOOSE_VERSION=0.18.0
+  - CHOOSENIM_CHOOSE_VERSION=0.17.2
+matrix:
+  allow_failures:
+    # devel branch is often broken
+    - env: CHOOSENIM_CHOOSE_VERSION=devel
+
+install:
+  - curl https://nim-lang.org/choosenim/init.sh -sSf | sh -s -- -y
+  - export PATH=~/.nimble/bin:$PATH
+  - nimble update
+  - nimble install -d -y
+
+before_script:
+  - set -e
+  - export PATH=~/.nimble/bin:$PATH
+  - export CHOOSENIM_NO_ANALYTICS=1
+script:
+  - nimble test
+  # Make sure the example compiles.
+  - nimble develop
+  - cd examples/nimbootstrap && nimble build
