@@ -36,13 +36,3 @@ proc copyStream*(sin: Stream, sout: Stream) =
     let len = sin.readData(addr(arr), arr.len)
     if len > 0:
       sout.writeData(addr(arr), len)
-
-when isMainModule:
-  let
-    sin = newStringStream("Hello, world!")
-    sout = newStringStream()
-
-  sin.copyStream(sout)
-
-  echo sout.data
-  

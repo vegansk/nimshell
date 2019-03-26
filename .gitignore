@@ -1,5 +1,10 @@
-nimcache
-nimshell
-nimrunner
+nimcache/
 *.swp
 *.exe
+
+/examples/*/bin
+
+# Nimble puts test executables with the files!
+/tests/*
+!/tests/*.nim
+!/tests/*.cfg
