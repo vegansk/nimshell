@@ -1,9 +1,10 @@
-[Package]
-name          = "nimshell"
-version       = "0.0.2"
+# Package
+version       = "0.0.3"
 author        = "Anatoly Galiulin"
 description   = "Library for shell scripting in nim"
 license       = "MIT"
 
-[Deps]
-Requires: "nim >= 0.13.0"
+srcDir = "src"
+
+# Deps
+requires "nim >= 0.17.2"

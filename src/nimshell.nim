@@ -1,6 +1,8 @@
 {.push warnings:off hints:off.}
-import os, osproc, macros, parseutils, sequtils, streams, strutils, options, private/utils, oids
+import os, osproc, macros, parseutils, sequtils, streams, strutils, options, oids
 {.pop.}
+
+import ./nimshell/private/utils
 
 type
   Command* = ref object
@@ -123,41 +125,3 @@ elif defined(posix):
 
   proc sh*(name: string): string = name & ".sh"
   proc exe*(name: string): string = name
-
-####################################################################################################
-# Some tests
-when isMainModule:
-  when defined(windows):
-    var v = cmd"""dir ${($$"dir /b /ad c:\\").mapIt(string, "\"c:\\" & it & "\"").join(" ")}"""
-    >> v
-    assert true == ?v.process
-
-    assert 0 != >>? ("execInvalidCommand" &> devNull())
-  
-    assert "Hello, world!" == $cmd"echo Hello, world!"
-
-    for v in $$"dir /b c:\\":
-      echo "\"" & v & "\""
-
-
-  elif defined(posix):
-    var v = cmd"""ls ${($$"ls /").mapIt(string, "/" & it).join(" ")}"""
-    >> v
-    assert isSome(v.process)
-  
-    assert 0 != >>? ("execInvalidCommand" &> devNull())
-  
-    assert "Hello, world!" == $cmd"echo Hello, world!"
-
-    for v in $$"ls -lah /":
-      echo "\"" & v & "\""
-  
-  assert true == (cmd"exit 0" and cmd"exit 0")
-  assert false == (cmd"exit 0" and cmd"exit 123")
-  assert `$?`() == 123
-  
-  assert true == (cmd"exit 1" or cmd"exit 0")
-  assert false == (cmd"exit 1" or cmd"exit 3")
-  assert `$?`() == 3
-
-  echo(which "sh")
